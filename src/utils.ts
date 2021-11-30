@@ -6,6 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import * as lr from '@lezer/lr'
 import * as common from '@lezer/common'
+import {parseMixed} from '@lezer/common'
 
 const toJS = (grammar: string) => {
   let hash = shajs('sha256').update(grammar).digest('hex')
@@ -105,4 +106,23 @@ export const createLRParser = (
 
   let parser: lr.LRParser = runJS(js.parser, externals).parser
   return parser
+}
+
+export const parseMixedSubtrees = (parse, input, fragments, ranges) => {
+  return parseMixed((node) => {
+    if (node.name == 'Embed' || node.name == 'EmbedContextual') {
+      return {parser: (parse as any).subtrees?.[node.from]}
+    }
+    return null
+  })(parse, input, fragments, ranges)
+}
+
+export const printBuffer = (buffer: number[], grammar: string) => {
+  let terms = getLRParserTerms(grammar).byId
+  let printed = ''
+  for (let i = 0; i < buffer.length; i += 4) {
+    let [term, start, end, size] = buffer.slice(i, i + 4)
+    printed += `${terms[term]}[${start}:${end}] ${size / 4}\n`
+  }
+  return printed
 }

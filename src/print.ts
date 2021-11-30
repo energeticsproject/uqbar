@@ -8,7 +8,7 @@ export interface PrintTree {
 }
 
 export const parse = (code: string, parser: Parser): PrintTree => {
-  let cursor = parser.parse(code).fullCursor()
+  let cursor = parser.parse(code).cursor()
   return niceTree(cursor)
 }
 

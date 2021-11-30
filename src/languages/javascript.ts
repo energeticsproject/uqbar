@@ -1,9 +1,13 @@
 import {ExternalTokenizer, ContextTracker} from '@lezer/lr'
+import {
+  getLRParserTerms,
+  createLRParser,
+  parseMixedSubtrees,
+  printBuffer,
+} from '../utils'
+import {Embedder} from '../Embedder'
 import grammar from './javascript.grammar'
 import chemistry from './chemistry'
-import {getLRParserTerms, createLRParser} from '../createLRParser'
-import {Embedder} from '../Embedder'
-import {parseMixed} from '@lezer/common'
 
 const {
   insertSemi,
@@ -51,10 +55,11 @@ const trackNewline = new ContextTracker({
 
 const {embedContext, embedTokenizer} = new Embedder(
   (input, stack, context) => {
-    let text = (stack as any).p.input.string
+    let string = (stack as any).p.input.string
     let callStart = context[1]
     let arglistStart = context.slice(-8)[1]
-    let call = text.slice(callStart, arglistStart)
+    let call = string.slice(callStart, arglistStart)
+    console.log(printBuffer(context, grammar))
 
     if (call === 'chemistry.reaction') return chemistry
   },
@@ -147,15 +152,6 @@ export const parser = createLRParser(grammar, {
   tsExtends,
   embedTokenizer,
   embedContext,
-}).configure({
-  wrap: (parse, input, fragments, ranges) => {
-    return parseMixed((node) => {
-      if (node.name == 'Embed' || node.name == 'EmbedContextual') {
-        return {parser: (parse as any).subtrees?.[node.from]}
-      }
-      return null
-    })(parse, input, fragments, ranges)
-  },
-})
+}).configure({wrap: parseMixedSubtrees})
 
 export default parser
