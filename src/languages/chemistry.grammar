@@ -1,0 +1,19 @@
+@top Reaction { reaction }
+
+@skip { space }
+
+reaction {
+  Reagents { Substance ("+" Substance)* } "->"
+  Products { Substance ("+" Substance)* } "~"
+  Rate { Embed }
+}
+
+@external tokens embedTokenizer from "./tokens" { Embed }
+
+@tokens {
+  Substance { $[a-zA-Z_] $[a-zA-Z_0-9]* }
+
+  space { $[ \t\n\r]+ }
+}
+
+@detectDelim

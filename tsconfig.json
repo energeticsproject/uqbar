@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["esnext", "dom"],
+    "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "outDir": "build",
+  },
+  "include": ["modules.d.ts", "src/**/*.ts"]
+}
