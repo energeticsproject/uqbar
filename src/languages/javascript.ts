@@ -59,7 +59,6 @@ const {embedContext, embedTokenizer} = new Embedder(
     let callStart = context[1]
     let arglistStart = context.slice(-8)[1]
     let call = string.slice(callStart, arglistStart)
-    console.log(printBuffer(context, grammar))
 
     if (call === 'chemistry.reaction') return chemistry
   },

@@ -1,37 +1,31 @@
-import {buildParserFile, GenError} from '@lezer/generator'
-import * as es from 'esbuild'
 import shajs from 'sha.js'
-import os from 'os'
-import fs from 'fs'
-import path from 'path'
 import * as lr from '@lezer/lr'
 import * as common from '@lezer/common'
 import {parseMixed} from '@lezer/common'
+import {GenError} from '@lezer/generator'
+import {getCached} from './utils.node'
+import {buildMixedParserFile} from './mixed'
+import * as mixed from './mixed'
 
 const toJS = (grammar: string) => {
   let hash = shajs('sha256').update(grammar).digest('hex')
-  let location = path.resolve(os.tmpdir(), hash)
-  let result = {
-    parser: null as string,
-    terms: null as string,
-    error: null as string,
-    warnings: [] as string[],
-  }
-  if (fs.existsSync(location)) {
-    result = JSON.parse(fs.readFileSync(location, 'utf8'))
+  let result = getCached(hash, () => {
+    let result = {
+      parser: null as string,
+      terms: null as string,
+      error: null as string,
+      warnings: [] as string[],
+    }
+    try {
+      let warn = (msg) => result.warnings.push(msg)
+      let moduleStyle = 'cjs'
+      let options = {warn, moduleStyle, includeNames: true}
+      Object.assign(result, buildMixedParserFile(grammar, options))
+    } catch (e) {
+      result.error = e instanceof GenError ? e.message : e.stack
+    }
     return result
-  }
-
-  try {
-    let warn = (msg) => result.warnings.push(msg)
-    let moduleStyle = 'cjs'
-    let options = {warn, moduleStyle, includeNames: true}
-    Object.assign(result, buildParserFile(grammar, options))
-  } catch (e) {
-    result.error = e instanceof GenError ? e.message : e.stack
-  }
-
-  fs.writeFileSync(location, JSON.stringify(result))
+  })
 
   return result
 }
@@ -39,6 +33,7 @@ const toJS = (grammar: string) => {
 const defaultExternals = {
   '@lezer/lr': lr,
   '@lezer/common': common,
+  '@energetics/lr-mixed': mixed,
 }
 
 const runJS = (src: string, externals?: any) => {

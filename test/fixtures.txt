@@ -1,0 +1,49 @@
+# Mixed {"parser": "javascript"}
+
+basicFunctionCall(arg) +
+chemistry.reaction(H2O -> H2 + O ~ tempreature ** 0.5)
+
+==>
+
+Script(
+  BinaryExpression(
+    CallExpression(
+      VariableName("basicFunctionCall")
+      ArgList(
+        "("
+        VariableName("arg")
+        ")"
+      )
+    )
+    ArithOp("+")
+    CallExpression(
+      MemberExpression(
+        VariableName("chemistry")
+        "."
+        PropertyName("reaction")
+      )
+      ArgList(
+        "("
+        Reaction(
+          Reagents(
+            Substance("H2O")
+          )
+          Products(
+            Substance("H2")
+            Substance("O")
+          )
+          Rate(
+            Script(
+              BinaryExpression(
+                VariableName("tempreature")
+                ArithOp("**")
+                Number("0.5")
+              )
+            )
+          )
+        )
+        ")"
+      )
+    )
+  )
+)
