@@ -1,7 +1,6 @@
 const {parsers, print} = require('../build/index.node.js')
 const fs = require('fs')
 const path = require('path')
-const {fileURLToPath} = require('url')
 const assert = require('assert')
 
 let caseDir = __dirname

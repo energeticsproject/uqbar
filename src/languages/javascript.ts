@@ -5,7 +5,7 @@ import {
   parseMixedSubtrees,
   printBuffer,
 } from '../utils'
-import {Embedder} from '../Embedder'
+import {EmbedTokenizer} from '../EmbedTokenizer'
 import grammar from './javascript.grammar'
 import chemistry from './chemistry'
 
@@ -53,9 +53,9 @@ const trackNewline = new ContextTracker({
   strict: false,
 })
 
-const {embedContext, embedTokenizer} = new Embedder(
+const {embedContext, embedTokenizer} = new EmbedTokenizer(
   (input, stack, context) => {
-    let string = (stack as any).p.input.string
+    let string = (stack.p.input as any).string
     let callStart = context[1]
     let arglistStart = context.slice(-8)[1]
     let call = string.slice(callStart, arglistStart)

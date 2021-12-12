@@ -2,10 +2,8 @@ import shajs from 'sha.js'
 import * as lr from '@lezer/lr'
 import * as common from '@lezer/common'
 import {parseMixed} from '@lezer/common'
-import {GenError} from '@lezer/generator'
+import {GenError, buildParserFile} from '@lezer/generator'
 import {getCached} from './utils.node'
-import {buildMixedParserFile} from './mixed'
-import * as mixed from './mixed'
 
 const toJS = (grammar: string) => {
   let hash = shajs('sha256').update(grammar).digest('hex')
@@ -17,10 +15,10 @@ const toJS = (grammar: string) => {
       warnings: [] as string[],
     }
     try {
-      let warn = (msg) => result.warnings.push(msg)
+      let warn = (msg: string) => result.warnings.push(msg)
       let moduleStyle = 'cjs'
       let options = {warn, moduleStyle, includeNames: true}
-      Object.assign(result, buildMixedParserFile(grammar, options))
+      Object.assign(result, buildParserFile(grammar, options))
     } catch (e) {
       result.error = e instanceof GenError ? e.message : e.stack
     }
@@ -33,7 +31,6 @@ const toJS = (grammar: string) => {
 const defaultExternals = {
   '@lezer/lr': lr,
   '@lezer/common': common,
-  '@energetics/lr-mixed': mixed,
 }
 
 const runJS = (src: string, externals?: any) => {
@@ -64,8 +61,8 @@ export const getLRParserTerms = (grammar: string) => {
     byName: {} as Record<string, number>,
     byId: [] as Record<number, string>,
   }
-  for (let id in (parser as any)?.termNames) {
-    let name = (parser as any)?.termNames[id]
+  for (let id in parser?.termNames) {
+    let name = parser?.termNames[id]
     terms.byName[name] = +id
     terms.byId[id] = name
   }
@@ -76,7 +73,7 @@ type ExternalSpecializer = (value: string, stack: lr.Stack) => number
 type External =
   | lr.ExternalTokenizer
   | ExternalSpecializer
-  | ((name: string) => common.NodeProp<any>)
+  | common.NodeProp<any>
   | lr.ContextTracker<any>
 
 export const createLRParser = (
@@ -103,7 +100,12 @@ export const createLRParser = (
   return parser
 }
 
-export const parseMixedSubtrees = (parse, input, fragments, ranges) => {
+export const parseMixedSubtrees = (
+  parse: common.PartialParse,
+  input: common.Input,
+  fragments: readonly common.TreeFragment[],
+  ranges: readonly {from: number; to: number}[]
+) => {
   return parseMixed((node) => {
     if (node.name == 'Embed' || node.name == 'EmbedContextual') {
       return {parser: (parse as any).subtrees?.[node.from]}

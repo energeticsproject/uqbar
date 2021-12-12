@@ -1,15 +1,12 @@
 import {createLRParser, getLRParserTerms, parseMixedSubtrees} from '../utils'
-import {Embedder} from '../Embedder'
+import {EmbedTokenizer} from '../EmbedTokenizer'
 import grammar from './chemistry.grammar'
 import javascript from './javascript'
 
 const {Embed, EmbedContextual} = getLRParserTerms(grammar).byName
 
-const {embedContext, embedTokenizer} = new Embedder(
-  (input, stack, context) => {
-    // !!! COOL STUFF HERE !!!
-    return javascript
-  },
+const {embedContext, embedTokenizer} = new EmbedTokenizer(
+  (input, stack, context) => javascript,
   {Embed, EmbedContextual}
 )
 

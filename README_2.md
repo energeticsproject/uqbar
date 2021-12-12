@@ -200,7 +200,7 @@ And here's how we define those externals:
 ```ts
 const {embedContext, embedTokenizer} = new Embedder(
   (input, stack, context) => {
-    let string = (stack as any).p.input.string
+    let string = (stack.p.input as any).string
     let callStart = context[1]
     let arglistStart = context.slice(-8)[1]
     let call = string.slice(callStart, arglistStart)

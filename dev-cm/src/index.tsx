@@ -4,7 +4,8 @@ import {basicSetup} from '@codemirror/basic-setup'
 import {EditorState} from '@codemirror/state'
 import {EditorView} from '@codemirror/view'
 import {LanguageSupport, LRLanguage} from '@codemirror/language'
-import {chemistry, javascript} from '../../build/index.browser'
+import {parsers} from '../../build/index.browser'
+const {chemistry, javascript} = parsers
 
 let doc =
   'basicFunctionCall(arg) +\nchemistry.reaction(H2O -> H2 + O ~ tempreature ** 0.5)'

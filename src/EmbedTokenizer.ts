@@ -1,11 +1,13 @@
-import {NodeProp} from '@lezer/common'
+import {NodeProp, Parser, Tree} from '@lezer/common'
 import {ExternalTokenizer, InputStream, LRParser, Stack} from '@lezer/lr'
-import {Action, ParseState, Seq} from './constants'
+import {constants} from '@lezer/lr'
+import {Parse} from '@lezer/lr/dist/parse'
+const {Action, ParseState, Seq} = constants
 
 const verbose =
   typeof process != 'undefined' && /\bparse_embed\b/.test(process.env.LOG)
 
-export class Embedder {
+export class EmbedTokenizer {
   embedContext: NodeProp<true>
   embedTokenizer: ExternalTokenizer
   constructor(
@@ -17,15 +19,16 @@ export class Embedder {
     readonly terms: {Embed: number; EmbedContextual: number}
   ) {
     this.embedContext = new NodeProp({deserialize: () => true})
-    this.embedTokenizer = new ExternalTokenizer((input, stack: any) => {
+    this.embedTokenizer = new ExternalTokenizer((input, stack: Stack) => {
       let context: number[]
       if (terms.EmbedContextual && stack.canShift(terms.EmbedContextual)) {
         context = this.getEmbedContext(stack)
       }
       let parser = embed(input, stack, context)
       if (!parser) return
-      if (!stack.p.subtrees) stack.p.subtrees = {}
-      stack.p.subtrees[stack.pos] = parser
+      let parse = stack.p as any
+      if (!parse.subtrees) parse.subtrees = {}
+      parse.subtrees[stack.pos] = parser
       let length = this.getEmbedTokenLength(stack, parser)
       input.advance(length)
       input.acceptToken(context ? terms.EmbedContextual : terms.Embed)
@@ -49,6 +52,7 @@ export class Embedder {
       i += 3
     ) {
       if ((next = data[i]) == Seq.End) {
+        // TODO: handle skipped reduce
         if (data[i + 1] == Seq.Next) next = data[(i = pair(data, i + 2))]
         else break
       }
@@ -57,7 +61,7 @@ export class Embedder {
     }
     return actions
   }
-  advanceToEmbedContext(stack: any) {
+  advanceToEmbedContext(stack: Stack) {
     // TODO: cache action sequence
     let parser = stack.p.parser
     let seen = new Array(parser.states.length / ParseState.Size).fill(false)
@@ -66,7 +70,7 @@ export class Embedder {
 
     let first = [stack, parser.hasAction(stack.state, Embed), Embed]
     // ranked-priority search, similar-ish to A*
-    let q = [[first], [], []]
+    let q = [[first], [], []] as [Stack, number, number][][]
     for (;;) {
       let [stack, a, t] = q[2].shift() || q[1].shift() || q[0].shift() || []
       if (!stack) {
@@ -85,7 +89,7 @@ export class Embedder {
         if (r === 1) console.log(`${trans} (reduce of ${aname} for ${tname})`)
         if (r === 0) console.log(`${trans} (shift for ${tname})`)
       }
-      if (props(a & Action.ValueMask)[(this.embedContext as any).id]) {
+      if (props(a & Action.ValueMask)[this.embedContext.id]) {
         return stack
       }
 
@@ -95,19 +99,20 @@ export class Embedder {
         let term = actions[ai++]
         if (seen[action]) continue
         seen[action] = true
-        let closes = !!props(term)[(NodeProp.openedBy as any).id]
+        let closes = !!props(term)[NodeProp.openedBy.id]
         let priority =
           +closes + +!!(action & Action.ReduceFlag) + +(term === -1)
         q[priority].push([stack, action, term])
       }
     }
   }
-  getEmbedContext(stack: any) {
+  getEmbedContext(stack: Stack) {
     // calling advanceToEmbedContext will do some shift/reduce actions,
     // which will in turn call p.stream.reset, causing this tokenizer's
     // input.acceptToken call to be ignored. here is a hack to prevent
     // that from happening
     const reset = stack.p.stream.reset
+    // @ts-ignore
     stack.p.stream.reset = () => {}
     let advanced = this.advanceToEmbedContext(stack)
     stack.p.stream.reset = reset
@@ -128,13 +133,15 @@ export class Embedder {
 
     return embedContext
   }
-  getEmbedTokenLength(stack: any, parser: any) {
+  getEmbedTokenLength = (stack: Stack, parser: Parser) => {
+    // @ts-ignore
     let str: string = stack.p.input.string.slice(stack.pos)
     let length = 0
-    let partial = parser.startParse(str)
+    let partial = parser.startParse(str) as Parse
     for (;;) {
       try {
         let tree = partial.advance()
+        // @ts-ignore
         let p = partial.baseParse || partial.baseTree || partial
         if (p.recovering) break
         length = p.minStackPos || p.length

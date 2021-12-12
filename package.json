@@ -6,15 +6,15 @@
   "types": "build/index.d.ts",
   "scripts": {
     "dev": "nodemon",
-    "postinstall": "cd dev && npm install",
+    "postinstall": "node postinstall.js && cd dev-cm && npm install",
     "prepare": "node build.js",
-    "start": "node -r dotenv/config build/index.node.js",
-    "test": "mocha test/index.js --watch --watch-files build,test"
+    "start": "node -r dotenv/config build/index.node.js"
   },
   "nodemonConfig": {
-    "exec": "npm run prepare && npm start 2>&1 | tee out.log",
+    "exec": "npm run prepare && npm start && mocha test/index.js",
     "watch": [
       "src",
+      "test",
       "dev-cm/src",
       "build.js",
       ".env"
@@ -53,6 +53,7 @@
     "esbuild": "0.13.14",
     "mocha": "^9.1.3",
     "nodemon": "^2.0.15",
+    "shelljs": "^0.8.4",
     "ts-node": "^10.4.0",
     "typescript": "4.4.3"
   }
